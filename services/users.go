@@ -28,7 +28,7 @@ func Registration(c *gin.Context) {
 func GetUsers(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 	var output []models.Users
-	if err := db.Raw("select * from users").Scan(&output).Error; err != nil {
+	if err := db.Raw("call get_users()").Scan(&output).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
 		return
 	}
