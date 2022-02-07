@@ -4,19 +4,13 @@ import (
 	"fmt"
 	"go_practice/config"
 	routes "go_practice/routers"
-	"log"
-	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	socketio "github.com/googollee/go-socket.io"
 )
 
 func main() {
-	db := config.SetupDB()
-	// db.AutoMigrate(&models.Task{})
-
-	r := routes.SetupRoutes(db)
-	r.Run(":" + os.Getenv("PORT"))
 
 	server := socketio.NewServer(nil)
 
@@ -53,12 +47,21 @@ func main() {
 
 	go server.Serve()
 	defer server.Close()
+	// Create Setup
+	db := config.SetupDB()
+	// db.AutoMigrate(&models.Task{})
 
-	http.Handle("/socket.io/", server)
-	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/", fs)
+	r := routes.SetupRoutes(db)
 
-	log.Println("Serving at localhost:8000...")
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
+	r.GET("/socket.io/", gin.WrapH(server))
 
+	r.POST("/socket.io/", func(context *gin.Context) {
+		server.ServeHTTP(context.Writer, context.Request)
+	})
+
+	// http.Handle("/socket.io/", server)
+	// http.Handle("/", http.FileServer(http.Dir("assets")))
+
+	// Run Gin
+	r.Run(":" + os.Getenv("PORT"))
 }
